@@ -61,5 +61,5 @@ jobs:
       - name: Show container logs
         if: always()
         run: |
-          docker logs advanced-ml-cd-container || true)
+          docker logs advanced-ml-cd-container || true
 
