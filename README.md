@@ -1,191 +1,386 @@
-# Advanced ML Continuous Delivery - ONNX Sentiment API
+# Advanced ML Continuous Delivery Assignment
 
-This repository is my student implementation of a Continuous Delivery assignment for a machine-learning model. The project serves a pre-trained ONNX sentiment-analysis model through FastAPI, packages the service with Docker, and validates it automatically with GitHub Actions.
+## Project Overview
 
-## Project structure
+This project demonstrates a Continuous Integration and Continuous Delivery (CI/CD) workflow for a machine learning sentiment analysis application.
 
+The application uses:
+
+* FastAPI for serving the machine learning model
+* ONNX Runtime for model inference
+* Docker for containerization
+* Pytest for automated testing
+* GitHub Actions for CI/CD automation
+
+The sentiment analysis model classifies text as either positive or negative.
+
+---
+
+## Project Structure
+
+```text
 advanced-ml-cd/
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+│
 ├── app/
 │   ├── __init__.py
-│   └── main.py
+│   ├── main.py
+│   └── model_service.py
+│
 ├── model/
-│   └── README.md
+│   └── model.onnx
+│
 ├── tests/
+│   ├── __init__.py
 │   ├── conftest.py
 │   └── test_api.py
-├── .github/workflows/
-│   └── cicd.yml
+│
 ├── Dockerfile
 ├── requirements.txt
-├── requirements-dev.txt
-├── .dockerignore
+├── train_sentiment_model.py
+├── README.md
 ├── .gitignore
-└── README.md
+└── .dockerignore
+```
 
-## Main features
-
-FastAPI REST API with /health and /predict endpoints.
-
-ONNX Runtime inference for a sentiment model.
-
-Input validation with Pydantic.
-
-Thread-pool execution for inference so requests do not block FastAPI's event loop.
-
-Gunicorn with multiple Uvicorn workers for concurrent requests.
-
-Multi-stage Docker build and non-root runtime user.
-
-Functional, edge-case, robustness, integration, and concurrent-request tests.
-
-GitHub Actions workflow that runs tests, builds the image, starts the container, checks health, and performs a prediction smoke test.
+---
 
 ## Prerequisites
 
-Python 3.11+
+The following tools are required:
 
-Docker Desktop
+* Python 3.11
+* pip
+* Docker Desktop
+* Git
+* GitHub account
 
-Git
+---
 
-GitHub account
+## Create a Virtual Environment
 
-The pre-trained ONNX sentiment model supplied in the lab
+Create a Python virtual environment:
 
-## 1. Add the ONNX model
+```bash
+python3.11 -m venv .venv
+```
 
-Copy the provided model into:
+Activate it on macOS/Linux:
 
-model/model.onnx
-
-The default tokenizer is:
-
-distilbert-base-uncased-finetuned-sst-2-english
-
-If the ONNX model was exported from another transformer, set TOKENIZER_NAME to the correct Hugging Face tokenizer before running the API.
-
-## 2. Run locally with Python
-
-Create and activate a virtual environment:
-
-python3 -m venv .venv
+```bash
 source .venv/bin/activate
-pip install -r requirements-dev.txt
+```
 
-Start the application:
+---
 
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+## Install Dependencies
 
-Open the interactive API documentation at http://127.0.0.1:8000/docs.
+Install all project dependencies:
 
-Health check:
+```bash
+python -m pip install -r requirements.txt
+```
 
-curl http://127.0.0.1:8000/health
+Main dependencies include:
 
-Prediction example:
+* FastAPI
+* Uvicorn
+* ONNX Runtime
+* NumPy
+* Scikit-learn
+* skl2onnx
+* Pytest
+* HTTPX
 
-curl -X POST http://127.0.0.1:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"text":"I really enjoyed this product."}'
+---
+
+## Machine Learning Model
+
+The project uses a small sentiment analysis model created with:
+
+* TF-IDF Vectorization
+* Logistic Regression
+* Scikit-learn
+
+The trained model is exported to ONNX format and stored at:
+
+```text
+model/model.onnx
+```
+
+To regenerate the model, run:
+
+```bash
+python train_sentiment_model.py
+```
+
+---
+
+## Run the FastAPI Application
+
+Start the API locally with:
+
+```bash
+python -m uvicorn app.main:app --reload
+```
+
+The application will be available at:
+
+```text
+http://127.0.0.1:8000
+```
+
+The automatically generated API documentation is available at:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+---
+
+## API Endpoints
+
+### Root Endpoint
+
+```text
+GET /
+```
+
+Returns a message confirming that the API is running.
+
+### Health Check
+
+```text
+GET /health
+```
 
 Example response:
 
+```json
 {
-  "label": "POSITIVE",
-  "confidence": 0.98
+  "status": "healthy"
 }
+```
 
-## 3. Run tests
+### Sentiment Prediction
 
-The automated test suite uses a deterministic mock sentiment model so CI does not require committing the lab's ONNX file.
+```text
+POST /predict
+```
 
-USE_MOCK_MODEL=true pytest -q
+Example request:
 
-The tests cover:
+```json
+{
+  "text": "I love this movie"
+}
+```
 
-Valid positive and negative inputs.
+Example response:
 
-Blank and missing inputs.
+```json
+{
+  "text": "I love this movie",
+  "sentiment": "positive",
+  "confidence": 0.74
+}
+```
 
-Incorrect data types.
+The exact confidence value may vary depending on the trained model.
 
-Oversized text.
+---
 
-Script-like and SQL-like strings.
+## Automated Testing
 
-Multiple concurrent prediction requests.
+The project includes automated tests for:
 
-Health and root endpoints.
+* Root endpoint
+* Health endpoint
+* Positive sentiment prediction
+* Negative sentiment prediction
+* Empty input
+* Missing input
+* Invalid input types
+* Long text inputs
+* Special characters
+* Malicious input
+* Concurrent requests
 
-## 4. Build and run with Docker
+Run the test suite with:
 
-Build the image:
+```bash
+python -m pytest tests -v
+```
 
+The tests verify the reliability and robustness of the API before deployment.
+
+---
+
+## Docker
+
+The application is containerized using Docker.
+
+Build the Docker image:
+
+```bash
 docker build -t advanced-ml-cd:1.0 .
+```
 
-Run with the real ONNX model:
+Run the container:
 
-docker run --rm -p 8000:8000 advanced-ml-cd:1.0
+```bash
+docker run --name advanced-ml-cd-container -p 8000:8000 advanced-ml-cd:1.0
+```
 
-For a CI-style smoke test without the real model:
+The API can then be accessed at:
 
-docker run --rm -e USE_MOCK_MODEL=true -p 8000:8000 advanced-ml-cd:1.0
+```text
+http://127.0.0.1:8000
+```
 
-## 5. GitHub Actions CI/CD
+Docker API documentation:
 
-The workflow is stored at .github/workflows/cicd.yml. It runs automatically on pushes and pull requests to main.
+```text
+http://127.0.0.1:8000/docs
+```
 
-Pipeline stages:
+The Dockerfile uses a multi-stage build and a minimal Python 3.11 image.
 
-Check out the repository.
+Locale support is installed in the runtime container because the ONNX text processing operations require the `en_US.UTF-8` locale.
 
-Install Python dependencies.
+---
 
-Run automated tests.
+## CI/CD Pipeline
 
-Build the Docker image.
+GitHub Actions is used for Continuous Integration and Continuous Delivery.
 
-Start a container in mock mode.
+The workflow file is located at:
 
-Verify /health.
+```text
+.github/workflows/ci.yml
+```
 
-Send a real HTTP request to /predict.
+The workflow is automatically triggered when code is pushed to the `main` branch.
 
-Print container logs if a stage fails.
+The pipeline performs the following steps:
 
-Clean up the container.
+1. Checks out the GitHub repository
+2. Configures Python 3.11
+3. Installs locale support
+4. Installs Python dependencies
+5. Runs automated tests
+6. Builds the Docker image
+7. Runs the Docker container
+8. Waits for the API to start
+9. Tests the `/health` endpoint
+10. Displays the container logs
 
-A failed test or failed integration check stops the pipeline before the image can be considered ready for delivery.
+A failed test or build prevents the pipeline from completing successfully.
 
-## 6. Creating the GitHub repository
+---
 
-Create a public or private GitHub repository called advanced-ml-cd, then run:
+## Testing Strategy
 
-git init
-git add .
-git commit -m "Initial advanced ML CD assignment"
-git branch -M main
-git remote add origin https://github.com/welmi496/advanced-ml-cd.git
-git push -u origin main
+The project includes several forms of automated testing.
 
-Replace WELMI496 with your GitHub username.
+### Functional Testing
 
-## Security and reliability considerations
+Functional tests verify that sentiment prediction works correctly for positive and negative inputs.
 
-Requests are validated before inference.
+### Edge Case Testing
 
-The container runs as a non-root user.
+The API is tested with:
 
-Model inference is isolated from user input; text is never executed as code or SQL.
+* Empty text
+* Very long text
+* Special characters
+* Missing input values
 
-Large input is rejected to reduce accidental or malicious resource exhaustion.
+### Invalid and Malicious Input Testing
 
-The health endpoint can be used by container orchestrators and monitoring systems.
+The API is tested with invalid data types and malicious-looking text such as script tags.
 
-Application/container logs can be collected centrally in production.
+These tests help verify that the API handles unexpected input safely.
 
-Production systems should add authentication, HTTPS, rate limiting, model/data-drift monitoring, and a controlled rollback strategy.
+### Concurrency Testing
 
-## Blue-green / canary deployment extension
+Multiple API requests are sent concurrently using Python's `ThreadPoolExecutor`.
 
-The container is immutable and therefore suitable for either blue-green or canary deployment. For a critical healthcare system, I would use a carefully controlled blue-green process for the final production switch, combined with strong validation, clinical governance, and immediate rollback capability. Canary deployment can also be useful before the full switch when organizational and safety controls permit exposure to a limited traffic segment.
+This verifies that the application can process multiple requests without failing.
+
+### Integration Testing
+
+The GitHub Actions pipeline builds and starts the Docker container, then sends a request to the `/health` endpoint.
+
+This verifies that the complete application works correctly inside the deployment environment.
+
+---
+
+## Challenges Faced
+
+### Python Environment Conflict
+
+The computer had both Anaconda Python 3.13 and a Python 3.11 virtual environment.
+
+At first, Uvicorn used the Anaconda Python installation and could not locate ONNX Runtime.
+
+The issue was solved by running Uvicorn through the virtual environment:
+
+```bash
+python -m uvicorn app.main:app --reload
+```
+
+### Missing ONNX Model
+
+The original sentiment ONNX model was not available locally.
+
+A small sentiment analysis model was trained using TF-IDF and Logistic Regression and exported to ONNX format using `skl2onnx`.
+
+### Docker Locale Error
+
+The ONNX model initially failed inside the Docker container because the minimal Linux image did not contain the `en_US.UTF-8` locale.
+
+Locale support was added to the Dockerfile and the required environment variables were configured.
+
+### Git Repository Cleanup
+
+The `.venv` directory was accidentally tracked during the initial Git commit.
+
+A `.gitignore` file was configured and the virtual environment and cache files were removed from Git tracking.
+
+### GitHub Actions Workflow Issue
+
+The initial GitHub Actions workflow failed because the workflow file was empty.
+
+After adding the complete workflow configuration, the CI/CD pipeline successfully executed the tests and Docker deployment checks.
+
+---
+
+## Repository
+
+GitHub repository:
+
+```text
+https://github.com/welmi496/advanced-ml-cd
+```
+
+---
+
+## Conclusion
+
+This project demonstrates how CI/CD practices can be applied to machine learning systems.
+
+The final implementation includes:
+
+* A FastAPI ML inference service
+* An ONNX sentiment analysis model
+* Automated testing
+* Docker containerization
+* GitHub Actions CI/CD automation
+* Health checks
+* Basic concurrency and robustness testing
+
+The CI/CD pipeline improves reliability by automatically testing the application and validating the Docker deployment whenever changes are pushed to the main branch.
