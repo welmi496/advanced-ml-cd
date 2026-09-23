@@ -2,7 +2,7 @@
 
 This repository is my student implementation of a Continuous Delivery assignment for a machine-learning model. The project serves a pre-trained ONNX sentiment-analysis model through FastAPI, packages the service with Docker, and validates it automatically with GitHub Actions.
 
-# Project structure
+## Project structure
 
 advanced-ml-cd/
 ├── app/
@@ -22,7 +22,7 @@ advanced-ml-cd/
 ├── .gitignore
 └── README.md
 
-# Main features
+## Main features
 
 FastAPI REST API with /health and /predict endpoints.
 
@@ -40,7 +40,7 @@ Functional, edge-case, robustness, integration, and concurrent-request tests.
 
 GitHub Actions workflow that runs tests, builds the image, starts the container, checks health, and performs a prediction smoke test.
 
-# Prerequisites
+## Prerequisites
 
 Python 3.11+
 
@@ -52,7 +52,7 @@ GitHub account
 
 The pre-trained ONNX sentiment model supplied in the lab
 
-# 1. Add the ONNX model
+## 1. Add the ONNX model
 
 Copy the provided model into:
 
@@ -64,7 +64,7 @@ distilbert-base-uncased-finetuned-sst-2-english
 
 If the ONNX model was exported from another transformer, set TOKENIZER_NAME to the correct Hugging Face tokenizer before running the API.
 
-# 2. Run locally with Python
+## 2. Run locally with Python
 
 Create and activate a virtual environment:
 
@@ -95,7 +95,7 @@ Example response:
   "confidence": 0.98
 }
 
-# 3. Run tests
+## 3. Run tests
 
 The automated test suite uses a deterministic mock sentiment model so CI does not require committing the lab's ONNX file.
 
@@ -117,7 +117,7 @@ Multiple concurrent prediction requests.
 
 Health and root endpoints.
 
-# 4. Build and run with Docker
+## 4. Build and run with Docker
 
 Build the image:
 
@@ -131,7 +131,7 @@ For a CI-style smoke test without the real model:
 
 docker run --rm -e USE_MOCK_MODEL=true -p 8000:8000 advanced-ml-cd:1.0
 
-# 5. GitHub Actions CI/CD
+## 5. GitHub Actions CI/CD
 
 The workflow is stored at .github/workflows/cicd.yml. It runs automatically on pushes and pull requests to main.
 
@@ -157,7 +157,7 @@ Clean up the container.
 
 A failed test or failed integration check stops the pipeline before the image can be considered ready for delivery.
 
-# 6. Creating the GitHub repository
+## 6. Creating the GitHub repository
 
 Create a public or private GitHub repository called advanced-ml-cd, then run:
 
@@ -170,7 +170,7 @@ git push -u origin main
 
 Replace WELMI496 with your GitHub username.
 
-# Security and reliability considerations
+## Security and reliability considerations
 
 Requests are validated before inference.
 
@@ -186,6 +186,6 @@ Application/container logs can be collected centrally in production.
 
 Production systems should add authentication, HTTPS, rate limiting, model/data-drift monitoring, and a controlled rollback strategy.
 
-# Blue-green / canary deployment extension
+## Blue-green / canary deployment extension
 
 The container is immutable and therefore suitable for either blue-green or canary deployment. For a critical healthcare system, I would use a carefully controlled blue-green process for the final production switch, combined with strong validation, clinical governance, and immediate rollback capability. Canary deployment can also be useful before the full switch when organizational and safety controls permit exposure to a limited traffic segment.
